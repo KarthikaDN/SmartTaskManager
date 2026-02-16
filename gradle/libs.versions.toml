@@ -18,6 +18,7 @@ room = "2.6.1"
 
 # KSP (must match Kotlin 2.0.21)
 ksp = "2.0.21-1.0.25"
+room-common-jvm = "2.8.4"
 
 
 [libraries]
@@ -42,6 +43,7 @@ androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navig
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-common-jvm = { group = "androidx.room", name = "room-common-jvm", version.ref = "room-common-jvm" }
 
 
 [plugins]

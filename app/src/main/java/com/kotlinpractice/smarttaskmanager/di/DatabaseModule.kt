@@ -3,6 +3,7 @@ package com.kotlinpractice.smarttaskmanager.di
 import android.content.Context
 import androidx.room.Room
 import com.kotlinpractice.smarttaskmanager.data.local.AppDatabase
+import com.kotlinpractice.smarttaskmanager.data.local.migration.MIGRATION_1_2
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,6 +22,8 @@ object DatabaseModule{
             context,
             AppDatabase::class.java,
             "smart_task_db"
-        ).build()
+        )
+            .addMigrations(MIGRATION_1_2)
+            .build()
     }
 }
