@@ -1,7 +1,8 @@
 package com.kotlinpractice.smarttaskmanager.di
 
 import com.kotlinpractice.smarttaskmanager.data.local.dao.TaskDao
-import com.kotlinpractice.smarttaskmanager.data.repository.TaskRepository
+import com.kotlinpractice.smarttaskmanager.data.repository.TaskRepositoryImpl
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -10,11 +11,9 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-class RepositoryModule{
+abstract class RepositoryModule{
 
-    @Provides
+    @Binds
     @Singleton
-    fun provideTaskRepository(dao: TaskDao): TaskRepository{
-        return TaskRepository(dao)
-    }
+    abstract fun bindTaskRepository(taskRepositoryImpl: TaskRepositoryImpl)
 }

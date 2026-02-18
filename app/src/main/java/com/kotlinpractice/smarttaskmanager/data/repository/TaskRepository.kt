@@ -1,59 +1,45 @@
 package com.kotlinpractice.smarttaskmanager.data.repository
 
-import com.kotlinpractice.smarttaskmanager.data.local.dao.TaskDao
-import com.kotlinpractice.smarttaskmanager.data.local.entity.TaskEntity
+import com.kotlinpractice.smarttaskmanager.data.local.entity.CategoryEntity
+import com.kotlinpractice.smarttaskmanager.domain.model.Category
 import com.kotlinpractice.smarttaskmanager.domain.model.Task
-import com.kotlinpractice.smarttaskmanager.mapper.taskEntityToTask
-import com.kotlinpractice.smarttaskmanager.mapper.taskToTaskEntity
-import com.kotlinpractice.smarttaskmanager.ui.tasklist.FilterType
-import com.kotlinpractice.smarttaskmanager.ui.tasklist.SortType
+
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
-class TaskRepository(
-    private val taskDao: TaskDao
-) {
-    fun getTasks(): Flow<List<Task>>{
-        return taskDao.getAllTasks().map { taskEntities ->
-            taskEntities.map { taskEntity ->
-                taskEntity.taskEntityToTask()
-            }
-        }
-    }
+interface TaskRepository {
 
-    fun getTask(id:Long): Flow<Task>{
-        return taskDao.getTask(id).map { taskEntity ->
-            taskEntity.taskEntityToTask()
-        }
-    }
-    suspend fun insertTask(title:String){
-        taskDao.insertTask(TaskEntity(title = title))
-    }
+    /**
+     * Get tasks filtered by category.
+     */
+    fun getTasksByCategory(categoryId: Long): Flow<List<Task>>
 
-    suspend fun updateTask(task: Task){
-        taskDao.updateTask(task.taskToTaskEntity())
-    }
+    /**
+     * Get a single task with full details
+     * (category + tags).
+     */
+    fun getTaskDetail(taskId: Long): Flow<Task>
 
-    suspend fun deleteTask(id:Long){
-        taskDao.deleteTask(id)
-    }
+    /**
+     * Insert a new task with selected tags.
+     */
+    suspend fun insertTask(task: Task, tagIds: List<Long>)
 
-    suspend fun searchTasks(query:String,sortType: SortType): Flow<List<Task>>{
-        return taskDao.searchTasks(query,if(sortType == SortType.ASC) "1" else "0" ).map { taskEntities ->
-            taskEntities.map { taskEntity ->
-                taskEntity.taskEntityToTask()
-            }
-        }
-    }
+    /**
+     * Update an existing task and its tags.
+     */
+    suspend fun updateTask(task: Task, tagIds: List<Long>)
 
-    suspend fun filterTasks(query:String,filterType: FilterType,sortType: SortType): Flow<List<Task>>{
-        return taskDao.filterTasks(query,
-            filterType == FilterType.COMPLETED,
-            if(sortType == SortType.ASC) "1" else "0"
-            ).map { taskEntities ->
-            taskEntities.map { taskEntity ->
-                taskEntity.taskEntityToTask()
-            }
-        }
-    }
+    /**
+     * Delete a task.
+     */
+    suspend fun deleteTask(taskId: Long)
+
+    /**
+     * Mark task as completed/uncompleted.
+     */
+    suspend fun setTaskCompleted(taskId: Long, completed: Boolean)
+
+    suspend fun insertCategory(category: Category)
+
+    fun getAllCategories(): Flow<List<Category>>
 }

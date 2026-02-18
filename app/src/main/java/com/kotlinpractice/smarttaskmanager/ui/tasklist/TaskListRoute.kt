@@ -9,39 +9,19 @@ import com.kotlinpractice.smarttaskmanager.data.local.entity.TaskEntity
 
 @Composable
 fun TaskListRoute(
-    onAddTaskClick: () -> Unit,
-    onUpdateTaskClick:(id: Long)-> Unit,
     viewModel: TaskListViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.taskListUiState.collectAsStateWithLifecycle()
-    val searchText by viewModel.searchQuery.collectAsStateWithLifecycle()
-    val filterType by viewModel.filterState.collectAsStateWithLifecycle()
-    val sortState by viewModel.sortState.collectAsStateWithLifecycle()
+    val tasks by viewModel.tasks.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val selectedCategoryId by viewModel.selectedCategoryId.collectAsStateWithLifecycle()
 
     TaskListScreen(
-        uiState = uiState,
-        onAddTaskClick = onAddTaskClick,
-        onDeleteTask = {id ->
-            viewModel.deleteTask(id)
-        },
-        onUpdateTask = {id ->
-            onUpdateTaskClick(id)
-        },
-        onComplete = { task ->
-            viewModel.markAsComplete(task)
-        },
-        searchText = searchText,
-        onSearch = { query->
-            viewModel.updateSearch(query)
-        },
-        filterItem = filterType,
-        onFilter = {selectedItem ->
-            viewModel.updateFilter(selectedItem)
-        },
-        sortType = sortState,
-        onSort = {sortType ->
-            viewModel.updateSortState(sortType)
-        }
-
+        tasks = tasks,
+        categories = categories,
+        selectedCategoryId = selectedCategoryId,
+        onCategorySelected = viewModel::selectCategory,
+        onTaskClick = { /* navigate */ },
+        onAddTaskClick = { /* navigate */ }
     )
 }
+

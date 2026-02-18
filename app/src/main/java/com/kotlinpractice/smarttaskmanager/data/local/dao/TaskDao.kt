@@ -1,17 +1,14 @@
 package com.kotlinpractice.smarttaskmanager.data.local.dao
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import com.kotlinpractice.smarttaskmanager.data.local.entity.CategoryEntity
 import com.kotlinpractice.smarttaskmanager.data.local.entity.TaskEntity
 import com.kotlinpractice.smarttaskmanager.data.local.entity.TaskTagCrossRef
 import com.kotlinpractice.smarttaskmanager.data.local.relation.TaskWithCategoryAndTags
-import com.kotlinpractice.smarttaskmanager.ui.tasklist.FilterType
-import com.kotlinpractice.smarttaskmanager.ui.tasklist.SortType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -31,9 +28,6 @@ interface TaskDao{
     @Query("DELETE FROM tasks WHERE id = :taskId")
     suspend fun deleteTask(taskId: Long)
 
-    @Update
-    suspend fun updateTask(task: TaskEntity)
-
     @Query("""
         SELECT * FROM tasks
         WHERE title LIKE '%' || :query || '%'
@@ -52,13 +46,13 @@ interface TaskDao{
         """)
     fun filterTasks(query: String,isCompleted: Boolean,sortType: String): Flow<List<TaskEntity>>
 
-    //Phase 4
+    //--------Phase 4------------------------------------------------------------------
     @Query("""
         SELECT * FROM tasks
         WHERE categoryId = :categoryId
         ORDER BY createdAt DESC
     """)
-    fun getTasksByCategory(categoryId: Long): Flow<List<TaskEntity>>
+    fun getTasksWithCategoryAndTagsByCategory(categoryId: Long): Flow<List<TaskWithCategoryAndTags>>
 
     @Transaction
     @Query("SELECT * FROM tasks WHERE id = :taskId")
@@ -86,5 +80,40 @@ interface TaskDao{
         crossRefs: List<TaskTagCrossRef>
     )
 
+    @Update
+    suspend fun updateTask(task: TaskEntity)
 
+    @Query("DELETE FROM tasks WHERE id = :taskId")
+    suspend fun deleteTaskById(taskId: Long)
+
+    @Query("""
+    UPDATE tasks
+    SET isCompleted = :completed,
+        updatedAt = :updatedAt
+    WHERE id = :taskId
+""")
+    suspend fun updateCompletion(taskId: Long, completed: Boolean, updatedAt: Long)
+
+    @Query("DELETE FROM task_tag_cross_ref WHERE taskId = :taskId")
+    suspend fun deleteCrossRefsForTask(taskId: Long)
+
+
+    @Transaction
+    suspend fun updateTaskWithTags(task: TaskEntity, tagIds: List<Long>) {
+        updateTask(task)
+
+        deleteCrossRefsForTask(task.id)
+
+        val crossRefs = tagIds.map { tagId ->
+            TaskTagCrossRef(task.id, tagId)
+        }
+
+        insertTaskTagCrossRefs(crossRefs)
+    }
+
+    @Insert
+    suspend fun insertCategory(category: CategoryEntity)
+
+    @Query("SELECT * FROM categories ORDER BY name ASC")
+    fun getAllCategories(): Flow<List<CategoryEntity>>
 }
