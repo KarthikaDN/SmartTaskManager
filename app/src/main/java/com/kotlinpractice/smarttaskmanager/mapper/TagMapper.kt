@@ -12,3 +12,12 @@ fun TagEntity.tagEntityToTag(): Tag{
         createdAt = Instant.ofEpochMilli(createdAt)
     )
 }
+
+fun Tag.tagToTagEntity(): TagEntity{
+    return TagEntity(
+        id = id,
+        name = name,
+        colorHex = colorHex,
+        createdAt = createdAt.toEpochMilli()
+    )
+}

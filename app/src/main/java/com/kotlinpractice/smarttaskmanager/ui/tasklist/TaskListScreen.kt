@@ -1,37 +1,33 @@
 package com.kotlinpractice.smarttaskmanager.ui.tasklist
 
+import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Card
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.*
+import androidx.compose.material3.SwipeToDismissBoxValue.EndToStart
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.kotlinpractice.smarttaskmanager.domain.model.Category
 import com.kotlinpractice.smarttaskmanager.domain.model.Task
+import com.kotlinpractice.smarttaskmanager.util.enums.Priority
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskListScreen(
     tasks: List<Task>,
@@ -39,41 +35,61 @@ fun TaskListScreen(
     selectedCategoryId: Long?,
     onCategorySelected: (Long?) -> Unit,
     onTaskClick: (Long) -> Unit,
+    onToggleComplete: (Long, Boolean) -> Unit,
+    onDeleteTask: (Long) -> Unit,
     onAddTaskClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
         modifier = modifier,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddTaskClick
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Task"
-                )
-            }
+            ExtendedFloatingActionButton(
+                onClick = onAddTaskClick,
+                icon = { Icon(Icons.Default.Add, null) },
+                text = { Text("Add Task") }
+            )
         }
-    ) { paddingValues ->
+    ) { padding ->
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(padding)
         ) {
 
-            // 🔹 Category Filter Row
             CategoryRow(
                 categories = categories,
                 selectedCategoryId = selectedCategoryId,
                 onCategorySelected = onCategorySelected
             )
 
-            // 🔹 Task List
-            TaskListContent(
-                tasks = tasks,
-                onTaskClick = onTaskClick
-            )
+            if (tasks.isEmpty()) {
+                EmptyState()
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(tasks, key = { it.id }) { task ->
+                        SwipeableTaskItem(
+                            task = task,
+                            onDelete = onDeleteTask,
+                            onEdit = onTaskClick
+                        ) {
+                            Box(
+                                modifier = Modifier.animateItem()
+                            ) {
+                                TaskItem(
+                                    task = task,
+                                    onClick = { onTaskClick(task.id) },
+                                    onToggleComplete = { onToggleComplete(task.id,!task.isCompleted) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -87,12 +103,10 @@ private fun CategoryRow(
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 12.dp),
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-
-        // 🔹 "All" category
         item {
             FilterChip(
                 selected = selectedCategoryId == null,
@@ -111,69 +125,151 @@ private fun CategoryRow(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TaskListContent(
-    tasks: List<Task>,
-    onTaskClick: (Long) -> Unit
+private fun SwipeableTaskItem(
+    task: Task,
+    onDelete: (Long) -> Unit,
+    onEdit: (Long) -> Unit,
+    content: @Composable () -> Unit
 ) {
-    if (tasks.isEmpty()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "No tasks available",
-                style = MaterialTheme.typography.bodyLarge
-            )
+    val haptic = LocalHapticFeedback.current
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    LaunchedEffect(dismissState.currentValue) {
+        when (dismissState.currentValue) {
+
+            SwipeToDismissBoxValue.StartToEnd -> {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onEdit(task.id)
+
+                // Reset immediately so it doesn’t stack
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+
+            SwipeToDismissBoxValue.EndToStart -> {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onDelete(task.id)
+            }
+
+            else -> Unit
         }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(
-                items = tasks,
-                key = { it.id }
-            ) { task ->
-                TaskItem(
-                    task = task,
-                    onClick = { onTaskClick(task.id) }
-                )
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = true,
+        enableDismissFromEndToStart = true,
+        backgroundContent = {
+            val direction = dismissState.dismissDirection
+
+            val color = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd ->
+                    MaterialTheme.colorScheme.tertiaryContainer
+                SwipeToDismissBoxValue.EndToStart ->
+                    MaterialTheme.colorScheme.error
+                else -> MaterialTheme.colorScheme.surface
+            }
+
+            val icon = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd ->
+                    Icons.Default.Edit
+                SwipeToDismissBoxValue.EndToStart ->
+                    Icons.Default.Delete
+                else -> null
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = when (direction) {
+                    SwipeToDismissBoxValue.StartToEnd ->
+                        Alignment.CenterStart
+                    SwipeToDismissBoxValue.EndToStart ->
+                        Alignment.CenterEnd
+                    else -> Alignment.Center
+                }
+            ) {
+                icon?.let {
+                    Icon(
+                        imageVector = it,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
             }
         }
+    ) {
+        content()
     }
 }
 
 @Composable
 private fun TaskItem(
     task: Task,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onToggleComplete: () -> Unit
 ) {
+    val priorityColor = when (task.priority) {
+        Priority.LOW -> Color.Green
+        Priority.MEDIUM -> MaterialTheme.colorScheme.tertiary
+        Priority.HIGH -> Color.Red
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
 
-            Text(
-                text = task.title,
-                style = MaterialTheme.typography.titleMedium
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
 
-            task.description?.let {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyMedium
+                Checkbox(
+                    checked = task.isCompleted,
+                    onCheckedChange = { onToggleComplete() }
                 )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(priorityColor, CircleShape)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+
+                    Text(
+                        text = task.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        textDecoration = if (task.isCompleted)
+                            TextDecoration.LineThrough else null,
+                        color = if (task.isCompleted)
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.onSurface
+                    )
+
+                    task.description?.let {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 2
+                        )
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = task.category.name,
@@ -184,9 +280,8 @@ private fun TaskItem(
             if (task.tags.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     task.tags.forEach { tag ->
                         AssistChip(
                             onClick = {},
@@ -195,11 +290,36 @@ private fun TaskItem(
                     }
                 }
             }
+
+            task.dueDate?.let {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Due: ${it}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
 
-
-
-
-
+@Composable
+private fun EmptyState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "No Tasks Yet",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tap + to create your first task",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}

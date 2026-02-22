@@ -9,6 +9,8 @@ import com.kotlinpractice.smarttaskmanager.data.local.entity.TaskEntity
 
 @Composable
 fun TaskListRoute(
+    onAddTaskClick:()-> Unit,
+    onUpdateClick:(Long)-> Unit,
     viewModel: TaskListViewModel = hiltViewModel()
 ) {
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
@@ -20,8 +22,12 @@ fun TaskListRoute(
         categories = categories,
         selectedCategoryId = selectedCategoryId,
         onCategorySelected = viewModel::selectCategory,
-        onTaskClick = { /* navigate */ },
-        onAddTaskClick = { /* navigate */ }
+        onTaskClick = { id ->
+            onUpdateClick(id)
+        },
+        onToggleComplete = viewModel::markTaskAsComplete,
+        onDeleteTask = viewModel::deleteTask,
+        onAddTaskClick = onAddTaskClick
     )
 }
 

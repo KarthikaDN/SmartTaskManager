@@ -1,5 +1,6 @@
 package com.kotlinpractice.smarttaskmanager.data.local.dao
 
+import android.util.Log
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
@@ -53,6 +54,12 @@ interface TaskDao{
         ORDER BY createdAt DESC
     """)
     fun getTasksWithCategoryAndTagsByCategory(categoryId: Long): Flow<List<TaskWithCategoryAndTags>>
+
+    @Query("""
+        SELECT * FROM tasks
+        ORDER BY createdAt DESC
+    """)
+    fun getAllTasksWithCategoryAndTags(): Flow<List<TaskWithCategoryAndTags>>
 
     @Transaction
     @Query("SELECT * FROM tasks WHERE id = :taskId")
@@ -111,9 +118,10 @@ interface TaskDao{
         insertTaskTagCrossRefs(crossRefs)
     }
 
-    @Insert
-    suspend fun insertCategory(category: CategoryEntity)
-
-    @Query("SELECT * FROM categories ORDER BY name ASC")
-    fun getAllCategories(): Flow<List<CategoryEntity>>
+    @Transaction
+    suspend fun deleteTaskAndItsCrossRefs(taskId:Long){
+        Log.d("SWIPE", "Delete triggered in DAO $taskId")
+        deleteTaskById(taskId)
+        deleteCrossRefsForTask(taskId)
+    }
 }

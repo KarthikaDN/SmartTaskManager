@@ -1,9 +1,11 @@
 package com.kotlinpractice.smarttaskmanager.ui.tasklist
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kotlinpractice.smarttaskmanager.data.local.entity.TaskEntity
-import com.kotlinpractice.smarttaskmanager.data.repository.TaskRepository
+import com.kotlinpractice.smarttaskmanager.data.repository.category.CategoryRepository
+import com.kotlinpractice.smarttaskmanager.data.repository.task.TaskRepository
 import com.kotlinpractice.smarttaskmanager.domain.model.Category
 import com.kotlinpractice.smarttaskmanager.domain.model.Task
 import com.kotlinpractice.smarttaskmanager.uistate.TaskListUiState
@@ -22,7 +24,11 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class TaskListViewModel @Inject constructor(private val taskRepository: TaskRepository): ViewModel() {
+class TaskListViewModel @Inject constructor(
+    private val taskRepository: TaskRepository,
+    private val categoryRepository: CategoryRepository
+)
+    : ViewModel() {
     //Phase 4-------------------------------
     private val _selectedCategoryId = MutableStateFlow<Long?>(null)
     val selectedCategoryId = _selectedCategoryId
@@ -31,7 +37,7 @@ class TaskListViewModel @Inject constructor(private val taskRepository: TaskRepo
     }
 
     val categories: StateFlow<List<Category>> =
-        taskRepository.getAllCategories().stateIn(
+        categoryRepository.getAllCategories().stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList<Category>()
@@ -42,11 +48,22 @@ class TaskListViewModel @Inject constructor(private val taskRepository: TaskRepo
         selectedCategoryId.flatMapLatest { categoryId ->
             categoryId?.let {
                 taskRepository.getTasksByCategory(it)
-            }?: flowOf(emptyList())
+            }?: taskRepository.getAllTasks()
         }
             .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList<Task>()
         )
+
+    fun deleteTask(taskId:Long){
+        viewModelScope.launch {
+            taskRepository.deleteTask(taskId)
+        }
+    }
+    fun markTaskAsComplete(taskId:Long,isComplete: Boolean){
+        viewModelScope.launch {
+            taskRepository.setTaskCompleted(taskId,isComplete)
+        }
+    }
 }

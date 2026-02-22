@@ -1,7 +1,6 @@
-package com.kotlinpractice.smarttaskmanager.data.repository
+package com.kotlinpractice.smarttaskmanager.data.repository.task
 
 import com.kotlinpractice.smarttaskmanager.data.local.dao.TaskDao
-import com.kotlinpractice.smarttaskmanager.data.local.entity.CategoryEntity
 import com.kotlinpractice.smarttaskmanager.domain.model.Category
 import com.kotlinpractice.smarttaskmanager.domain.model.Task
 import com.kotlinpractice.smarttaskmanager.mapper.categoryEntityToCategory
@@ -30,6 +29,14 @@ class TaskRepositoryImpl @Inject constructor(
             }
     }
 
+    override fun getAllTasks(): Flow<List<Task>> {
+        return taskDao.getAllTasksWithCategoryAndTags().map { listOfTaskWithCatAndTags ->
+            listOfTaskWithCatAndTags.map { taskWithCatAndTags ->
+                taskWithCatAndTags.toDomain()
+            }
+        }
+    }
+
     override suspend fun insertTask(
         task: Task,
         tagIds: List<Long>
@@ -48,7 +55,7 @@ class TaskRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteTask(taskId: Long) {
-        taskDao.deleteTaskById(taskId)
+        taskDao.deleteTaskAndItsCrossRefs(taskId)
     }
 
     override suspend fun setTaskCompleted(taskId: Long, completed: Boolean) {
@@ -57,17 +64,5 @@ class TaskRepositoryImpl @Inject constructor(
             completed = completed,
             updatedAt = System.currentTimeMillis()
         )
-    }
-
-    override suspend fun insertCategory(category: Category) {
-        taskDao.insertCategory(category.categoryToCategoryEntity())
-    }
-
-    override fun getAllCategories(): Flow<List<Category>> {
-        return taskDao.getAllCategories().map { listOfCategoryEntites ->
-            listOfCategoryEntites.map { categoryEntity ->
-                categoryEntity.categoryEntityToCategory()
-            }
-        }
     }
 }

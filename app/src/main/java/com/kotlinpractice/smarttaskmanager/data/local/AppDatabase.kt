@@ -2,6 +2,8 @@ package com.kotlinpractice.smarttaskmanager.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.kotlinpractice.smarttaskmanager.data.local.dao.CategoryDao
+import com.kotlinpractice.smarttaskmanager.data.local.dao.TagDao
 import com.kotlinpractice.smarttaskmanager.data.local.dao.TaskDao
 import com.kotlinpractice.smarttaskmanager.data.local.entity.CategoryEntity
 import com.kotlinpractice.smarttaskmanager.data.local.entity.TagEntity
@@ -18,4 +20,6 @@ import com.kotlinpractice.smarttaskmanager.data.local.entity.TaskTagCrossRef
 )
 abstract class AppDatabase: RoomDatabase(){
     abstract fun taskDao(): TaskDao
+    abstract fun categoryDao(): CategoryDao
+    abstract fun tagDao(): TagDao
 }

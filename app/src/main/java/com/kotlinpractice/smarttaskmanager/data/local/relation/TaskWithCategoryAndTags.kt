@@ -24,7 +24,7 @@ data class TaskWithCategoryAndTags(
         associateBy = Junction(
             value = TaskTagCrossRef::class,
             parentColumn = "taskId",
-            entityColumn = "tagsId"
+            entityColumn = "tagId"
         )
     )
     val tags:List<TagEntity>
