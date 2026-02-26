@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -21,10 +22,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -37,7 +41,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,8 +56,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.kotlinpractice.smarttaskmanager.domain.model.Category
+import com.kotlinpractice.smarttaskmanager.ui.components.SmartTaskTopAppBar
 import com.kotlinpractice.smarttaskmanager.uistate.AddEditTaskUiState
 import com.kotlinpractice.smarttaskmanager.util.enums.Priority
+import java.time.Instant
+import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -67,22 +77,15 @@ fun AddEditTaskScreen(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        if (state.taskId == null)
-                            "Add Task"
-                        else
-                            "Edit Task"
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, null)
-                    }
-                }
+            SmartTaskTopAppBar(
+                title = if (state.taskId == null)
+                    "Add Task"
+                else
+                    "Edit Task",
+                showBackButton = true,
+                onBackClick = onBackClick
             )
-        }
+        },
     ) { padding ->
 
         Column(
@@ -157,15 +160,17 @@ fun AddEditTaskScreen(
             }
 
             // Due Date (simple version)
-//            Button(
-//                onClick = {
-//                    onDueDateSelected(System.currentTimeMillis())
-//                }
-//            ) {
-//                Text("Set Due Date")
-//            }
+            SectionCard(
+                title = "Due Date",
+                accentColor = MaterialTheme.colorScheme.primary
+            ) {
+                DueDatePickerField(
+                    selectedDate = state.dueDate,
+                    onDateSelected = onDueDateSelected
+                )
+            }
 
-//            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = onSaveClick,
@@ -267,6 +272,99 @@ fun PriorityRadioButtons(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DueDatePickerField(
+    selectedDate: Long?,
+    onDateSelected: (Long) -> Unit
+) {
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    val datePickerState = rememberDatePickerState()
+    val timePickerState = rememberTimePickerState()
+
+    val formatter = remember {
+        java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
+    }
+
+    val formattedDate = selectedDate?.let {
+        val instant = java.time.Instant.ofEpochMilli(it)
+        val zoned = instant.atZone(java.time.ZoneId.systemDefault())
+        formatter.format(zoned)
+    } ?: "Select due date"
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showDatePicker = true }
+    ) {
+        OutlinedTextField(
+            value = formattedDate,
+            onValueChange = {},
+            readOnly = true,
+            enabled = false,
+            label = { Text("Due Date") },
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    // 🔵 Date Picker
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                Button(onClick = {
+                    showDatePicker = false
+                    showTimePicker = true
+                }) {
+                    Text("Next")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    // 🟣 Time Picker
+    if (showTimePicker) {
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                Button(onClick = {
+                    showTimePicker = false
+
+                    val selectedDateMillis =
+                        datePickerState.selectedDateMillis?.let { dateMillis ->
+
+                            val localDate = Instant.ofEpochMilli(dateMillis)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+
+                            val localDateTime = localDate.atTime(
+                                timePickerState.hour,
+                                timePickerState.minute
+                            )
+
+                            localDateTime
+                                .atZone(ZoneId.systemDefault())
+                                .toInstant()
+                                .toEpochMilli()
+                        }
+
+                    selectedDateMillis?.let { onDateSelected(it) }
+                }) {
+                    Text("Confirm")
+                }
+            },
+            text = {
+                TimePicker(state = timePickerState)
+            }
+        )
+    }
+}
+
 @Composable
 fun SectionCard(
     title: String,

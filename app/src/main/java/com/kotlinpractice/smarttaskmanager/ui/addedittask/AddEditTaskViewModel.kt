@@ -68,6 +68,7 @@ class AddEditTaskViewModel @Inject constructor(
                     selectedTagIds = it.tags.filter { tag ->
                         task.tags.contains(tag)
                     }.map { filteredTags -> filteredTags.id }.toSet(),
+                    createdAt = task.createdAt.toEpochMilli(),
                     dueDate = task.dueDate?.toEpochMilli(),
                     isCompleted = task.isCompleted
                 ) }
@@ -184,7 +185,7 @@ class AddEditTaskViewModel @Inject constructor(
             tags = selectedTags,
             priority = state.priority, // adjust if dynamic
             dueDate = state.dueDate?.let { Instant.ofEpochMilli(it) },
-            createdAt = now,
+            createdAt = state.createdAt?.let { Instant.ofEpochMilli(it) }?:now,
             updatedAt = now
         )
 

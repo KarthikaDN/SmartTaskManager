@@ -25,7 +25,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.kotlinpractice.smarttaskmanager.domain.model.Category
 import com.kotlinpractice.smarttaskmanager.domain.model.Task
+import com.kotlinpractice.smarttaskmanager.ui.components.SmartTaskTopAppBar
 import com.kotlinpractice.smarttaskmanager.util.enums.Priority
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,10 +41,17 @@ fun TaskListScreen(
     onToggleComplete: (Long, Boolean) -> Unit,
     onDeleteTask: (Long) -> Unit,
     onAddTaskClick: () -> Unit,
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
         modifier = modifier,
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
+        topBar = {
+            SmartTaskTopAppBar()
+        },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onAddTaskClick,
@@ -290,11 +300,41 @@ private fun TaskItem(
                     }
                 }
             }
+            //createdDate:
+            val formattedDate = remember(task.createdAt) {
+                val zoned = task.createdAt.atZone(ZoneId.systemDefault())
+                val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
+                formatter.format(zoned)
+            }
 
-            task.dueDate?.let {
-                Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Created at: $formattedDate",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            //updated at:
+            val formattedUpdatedDate = remember(task.updatedAt) {
+                val zoned = task.updatedAt.atZone(ZoneId.systemDefault())
+                val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
+                formatter.format(zoned)
+            }
+
+            Text(
+                text = "Updated at: $formattedUpdatedDate",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            //Due date
+            task.dueDate?.let { dueInstant ->
+
+                val formattedDate = remember(dueInstant) {
+                    val zoned = dueInstant.atZone(ZoneId.systemDefault())
+                    val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
+                    formatter.format(zoned)
+                }
+
                 Text(
-                    text = "Due: ${it}",
+                    text = "Due: $formattedDate",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

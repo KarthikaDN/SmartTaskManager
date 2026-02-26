@@ -12,6 +12,7 @@ data class AddEditTaskUiState(
     val selectedCategoryId: Long? = null,
     val selectedTagIds: Set<Long> = emptySet(),
     val priority: Priority = Priority.LOW,
+    val createdAt: Long? = null,
     val dueDate: Long? = null,
     val isCompleted: Boolean = false,
     val categories: List<Category> = emptyList(),
