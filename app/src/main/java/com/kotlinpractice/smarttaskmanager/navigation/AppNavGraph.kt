@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.kotlinpractice.smarttaskmanager.ui.addedittask.AddEditTaskRoute
 import com.kotlinpractice.smarttaskmanager.ui.addedittask.AddEditTaskViewModel
+import com.kotlinpractice.smarttaskmanager.ui.managetags.ManageTagsRoute
 import com.kotlinpractice.smarttaskmanager.ui.tasklist.TaskListRoute
 import com.kotlinpractice.smarttaskmanager.ui.tasklist.TaskListScreen
 
@@ -29,7 +30,16 @@ fun AppNavGraph() {
                     navController.navigate(
                         "${Destinations.ADD_EDIT_TASK}/${selectedId}"
                     )
+                },
+                onManageTagsClick = {
+                    navController.navigate(Destinations.MANAGE_TAGS)
                 }
+            )
+        }
+
+        composable(Destinations.MANAGE_TAGS) {
+            ManageTagsRoute(
+                onBack = { navController.popBackStack() }
             )
         }
 

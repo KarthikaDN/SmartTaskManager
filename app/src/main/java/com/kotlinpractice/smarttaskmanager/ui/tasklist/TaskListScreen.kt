@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -63,6 +64,7 @@ fun TaskListScreen(
     onToggleDirection: () -> Unit,
     onToggleShowCompletedTasks:()-> Unit,
     onSectionExpanded:(SectionType)-> Unit,
+    onManageTagsClicked:()-> Unit,
     modifier: Modifier = Modifier
 ) {
     var showSortSheet by remember { mutableStateOf(false) }
@@ -77,7 +79,8 @@ fun TaskListScreen(
                 onSortIconClicked = {
                     showSortSheet = true
                 },
-                screenName = ScreenName.TASK_LIST
+                screenName = ScreenName.TASK_LIST,
+                onManageTagsClick = onManageTagsClicked
             )
         },
         floatingActionButton = {
@@ -352,118 +355,136 @@ private fun TaskItem(
     onToggleComplete: () -> Unit
 ) {
     val priorityColor = when (task.priority) {
-        Priority.LOW -> Color.Green
+        Priority.LOW -> Color(0xFF4CAF50)
         Priority.MEDIUM -> MaterialTheme.colorScheme.tertiary
-        Priority.HIGH -> Color.Red
+        Priority.HIGH -> MaterialTheme.colorScheme.error
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 6.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(15.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // 🔹 Left accent strip (premium touch)
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .fillMaxHeight()
+                    .background(priorityColor)
+            )
 
-                Checkbox(
-                    checked = task.isCompleted,
-                    onCheckedChange = { onToggleComplete() }
-                )
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .weight(1f)
+            ) {
 
-                Spacer(modifier = Modifier.width(8.dp))
+                // ─── Top Row ───
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
 
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(priorityColor, CircleShape)
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-
-                    Text(
-                        text = task.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        textDecoration = if (task.isCompleted)
-                            TextDecoration.LineThrough else null,
-                        color = if (task.isCompleted)
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        else MaterialTheme.colorScheme.onSurface
+                    Checkbox(
+                        checked = task.isCompleted,
+                        onCheckedChange = { onToggleComplete() }
                     )
 
-                    task.description?.let {
-                        Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(Modifier.width(8.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+
                         Text(
-                            text = it,
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 2
+                            text = task.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            textDecoration = if (task.isCompleted)
+                                TextDecoration.LineThrough else null,
+                            color = if (task.isCompleted)
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            else MaterialTheme.colorScheme.onSurface
+                        )
+
+                        task.description?.let {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 2,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    task.dueDate?.let { due ->
+                        val formatted = remember(due) {
+                            val zoned = due.atZone(ZoneId.systemDefault())
+                            DateTimeFormatter.ofPattern("dd MMM")
+                                .format(zoned)
+                        }
+
+                        Text(
+                            text = formatted,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (due.isOverdue())
+                                MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.primary
                         )
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
-            Text(
-                text = task.category.name,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
+                // ─── Category + Tags ───
+                Text(
+                    text = task.category.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
 
-            if (task.tags.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                if (task.tags.isNotEmpty()) {
+                    Spacer(Modifier.height(6.dp))
 
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    task.tags.forEach { tag ->
-                        AssistChip(
-                            onClick = {},
-                            label = { Text(tag.name) }
-                        )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        task.tags.forEach { tag ->
+                            AssistChip(
+                                onClick = {},
+                                label = { Text(tag.name) }
+                            )
+                        }
                     }
                 }
-            }
-            //createdDate:
-            val formattedDate = remember(task.createdAt) {
-                val zoned = task.createdAt.atZone(ZoneId.systemDefault())
-                val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
-                formatter.format(zoned)
-            }
 
-            Text(
-                text = "Created at: $formattedDate",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            //updated at:
-            val formattedUpdatedDate = remember(task.updatedAt) {
-                val zoned = task.updatedAt.atZone(ZoneId.systemDefault())
-                val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
-                formatter.format(zoned)
-            }
+                Spacer(Modifier.height(10.dp))
 
-            Text(
-                text = "Updated at: $formattedUpdatedDate",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            //Due date
-            task.dueDate?.let { dueInstant ->
+                // ─── Metadata (subtle & compact) ───
+                val created = remember(task.createdAt) {
+                    task.createdAt
+                        .atZone(ZoneId.systemDefault())
+                        .format(DateTimeFormatter.ofPattern("dd MMM yyyy"))
+                }
 
-                val formattedDate = remember(dueInstant) {
-                    val zoned = dueInstant.atZone(ZoneId.systemDefault())
-                    val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
-                    formatter.format(zoned)
+                val updated = remember(task.updatedAt) {
+                    task.updatedAt
+                        .atZone(ZoneId.systemDefault())
+                        .format(DateTimeFormatter.ofPattern("dd MMM yyyy"))
                 }
 
                 Text(
-                    text = "Due: $formattedDate",
+                    text = "Created $created • Updated $updated",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -20,6 +20,7 @@ import kotlin.coroutines.cancellation.CancellationException
 fun TaskListRoute(
     onAddTaskClick:()-> Unit,
     onUpdateClick:(Long)-> Unit,
+    onManageTagsClick:()-> Unit,
     viewModel: TaskListViewModel = hiltViewModel()
 ) {
     val taskListUiState by viewModel.taskListUiState.collectAsStateWithLifecycle()
@@ -71,7 +72,8 @@ fun TaskListRoute(
         onSortSelected = viewModel::updateSort,
         onToggleDirection = viewModel::toggleSortDirection,
         onSectionExpanded = viewModel::toggleSection,
-        onToggleShowCompletedTasks = viewModel::toggleShowCompletedTasks
+        onToggleShowCompletedTasks = viewModel::toggleShowCompletedTasks,
+        onManageTagsClicked = onManageTagsClick
     )
 }
 

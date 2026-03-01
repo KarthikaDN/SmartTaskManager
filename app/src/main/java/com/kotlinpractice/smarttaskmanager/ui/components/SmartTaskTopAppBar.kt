@@ -1,6 +1,7 @@
 package com.kotlinpractice.smarttaskmanager.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -9,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
@@ -38,6 +40,7 @@ fun SmartTaskTopAppBar(
     showBackButton: Boolean = false,
     onBackClick: (() -> Unit)? = null,
     onSortIconClicked:(()-> Unit)? = null,
+    onManageTagsClick:(()-> Unit)?= null,
     screenName: ScreenName
 ) {
     CenterAlignedTopAppBar(
@@ -50,7 +53,12 @@ fun SmartTaskTopAppBar(
         actions = {
             if(screenName == ScreenName.TASK_LIST){
                 IconButton(onClick = { onSortIconClicked?.invoke() }) {
-                    Icon(Icons.Default.Sort, contentDescription = "Sort")
+                    Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort")
+                }
+                if(onManageTagsClick != null){
+                    TaskListOverflowMenu(
+                        onManageTagsClick = onManageTagsClick
+                    )
                 }
             }
         },
@@ -75,4 +83,33 @@ fun SmartTaskTopAppBar(
         ),
         modifier = Modifier.shadow(4.dp)
     )
+}
+
+@Composable
+private fun TaskListOverflowMenu(
+    onManageTagsClick: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "More options"
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Manage Tags") },
+                onClick = {
+                    expanded = false
+                    onManageTagsClick()
+                }
+            )
+        }
+    }
 }

@@ -80,27 +80,6 @@ class AddEditTaskViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AddEditTaskUiState())
     val uiState: StateFlow<AddEditTaskUiState> = _uiState.asStateFlow()
 
-//    private fun loadTask(id: Long) {
-//        viewModelScope.launch {
-//            taskRepository.getTaskDetail(id).collect { taskWithRelations ->
-//                taskWithRelations?.let { task ->
-//
-//                    _uiState.update {
-//                        it.copy(
-//                            taskId = task.id,
-//                            title = task.title,
-//                            description = task.description.orEmpty(),
-//                            selectedCategoryId = task.category.id,
-//                            selectedTagIds = task.tags.map { tag -> tag.id }.toSet(),
-//                            dueDate = task.dueDate?.toEpochMilli(),
-//                            isCompleted = task.isCompleted
-//                        )
-//                    }
-//                }
-//            }
-//        }
-//    }
-
     // ------------------------------------------------
     // Events
     // ------------------------------------------------

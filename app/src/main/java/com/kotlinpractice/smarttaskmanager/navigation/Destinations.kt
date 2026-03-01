@@ -3,6 +3,7 @@ package com.kotlinpractice.smarttaskmanager.navigation
 object Destinations {
     const val TASK_LIST = "task_list"
     const val ADD_TASK = "add_task"
+    const val MANAGE_TAGS = "manage_tags"
     const val ADD_EDIT_TASK = "add_edit_task"
     const val TASK_ID_ARG = "taskId"
 
