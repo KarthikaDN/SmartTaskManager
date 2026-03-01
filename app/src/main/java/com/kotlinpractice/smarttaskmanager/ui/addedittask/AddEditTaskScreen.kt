@@ -1,7 +1,5 @@
 package com.kotlinpractice.smarttaskmanager.ui.addedittask
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,14 +12,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,15 +28,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -59,6 +50,7 @@ import com.kotlinpractice.smarttaskmanager.domain.model.Category
 import com.kotlinpractice.smarttaskmanager.ui.components.SmartTaskTopAppBar
 import com.kotlinpractice.smarttaskmanager.uistate.AddEditTaskUiState
 import com.kotlinpractice.smarttaskmanager.util.enums.Priority
+import com.kotlinpractice.smarttaskmanager.util.enums.ScreenName
 import java.time.Instant
 import java.time.ZoneId
 
@@ -83,7 +75,8 @@ fun AddEditTaskScreen(
                 else
                     "Edit Task",
                 showBackButton = true,
-                onBackClick = onBackClick
+                onBackClick = onBackClick,
+                screenName = ScreenName.ADD_EDIT_TASK
             )
         },
     ) { padding ->

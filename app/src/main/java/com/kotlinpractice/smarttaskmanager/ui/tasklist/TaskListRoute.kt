@@ -1,5 +1,6 @@
 package com.kotlinpractice.smarttaskmanager.ui.tasklist
 
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -21,11 +22,9 @@ fun TaskListRoute(
     onUpdateClick:(Long)-> Unit,
     viewModel: TaskListViewModel = hiltViewModel()
 ) {
-    val tasks by viewModel.tasks.collectAsStateWithLifecycle()
-    val categories by viewModel.categories.collectAsStateWithLifecycle()
-    val selectedCategoryId by viewModel.selectedCategoryId.collectAsStateWithLifecycle()
-
+    val taskListUiState by viewModel.taskListUiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val listState = rememberLazyListState()
 
     // Collect one-time events here
     LaunchedEffect(Unit) {
@@ -55,11 +54,13 @@ fun TaskListRoute(
             }
         }
     }
+    LaunchedEffect(taskListUiState.currentSort) {
+        listState.animateScrollToItem(0)
+    }
     TaskListScreen(
-        tasks = tasks,
-        categories = categories,
-        selectedCategoryId = selectedCategoryId,
+        taskListUiState = taskListUiState,
         onCategorySelected = viewModel::selectCategory,
+        listState = listState,
         onTaskClick = { id ->
             onUpdateClick(id)
         },
@@ -67,6 +68,10 @@ fun TaskListRoute(
         onDeleteTask = viewModel::deleteTask,
         onAddTaskClick = onAddTaskClick,
         snackbarHostState = snackbarHostState,
+        onSortSelected = viewModel::updateSort,
+        onToggleDirection = viewModel::toggleSortDirection,
+        onSectionExpanded = viewModel::toggleSection,
+        onToggleShowCompletedTasks = viewModel::toggleShowCompletedTasks
     )
 }
 

@@ -1,10 +1,16 @@
 package com.kotlinpractice.smarttaskmanager.ui.tasklist
 
-import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -13,47 +19,75 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
-import androidx.compose.material3.SwipeToDismissBoxValue.EndToStart
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.kotlinpractice.smarttaskmanager.domain.model.Category
 import com.kotlinpractice.smarttaskmanager.domain.model.Task
 import com.kotlinpractice.smarttaskmanager.ui.components.SmartTaskTopAppBar
+import com.kotlinpractice.smarttaskmanager.ui.components.SortBottomSheetContent
+import com.kotlinpractice.smarttaskmanager.uistate.TaskListUiState
 import com.kotlinpractice.smarttaskmanager.util.enums.Priority
+import com.kotlinpractice.smarttaskmanager.util.enums.ScreenName
+import com.kotlinpractice.smarttaskmanager.util.enums.SectionType
+import com.kotlinpractice.smarttaskmanager.util.enums.SortType
+import com.kotlinpractice.smarttaskmanager.util.enums.backgroundColor
+import com.kotlinpractice.smarttaskmanager.util.enums.displayText
+import com.kotlinpractice.smarttaskmanager.util.enums.textColor
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskListScreen(
-    tasks: List<Task>,
-    categories: List<Category>,
-    selectedCategoryId: Long?,
+    taskListUiState: TaskListUiState,
     onCategorySelected: (Long?) -> Unit,
+    listState: LazyListState,
     onTaskClick: (Long) -> Unit,
     onToggleComplete: (Long, Boolean) -> Unit,
     onDeleteTask: (Long) -> Unit,
     onAddTaskClick: () -> Unit,
     snackbarHostState: SnackbarHostState,
+    onSortSelected: (SortType) -> Unit,
+    onToggleDirection: () -> Unit,
+    onToggleShowCompletedTasks:()-> Unit,
+    onSectionExpanded:(SectionType)-> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showSortSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     Scaffold(
         modifier = modifier,
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState)
         },
         topBar = {
-            SmartTaskTopAppBar()
+            SmartTaskTopAppBar(
+                onSortIconClicked = {
+                    showSortSheet = true
+                },
+                screenName = ScreenName.TASK_LIST
+            )
         },
         floatingActionButton = {
+
+            val isAtTop by remember {
+                derivedStateOf { !listState.canScrollBackward }
+            }
+
             ExtendedFloatingActionButton(
+                expanded = isAtTop,
                 onClick = onAddTaskClick,
                 icon = { Icon(Icons.Default.Add, null) },
                 text = { Text("Add Task") }
@@ -68,33 +102,59 @@ fun TaskListScreen(
         ) {
 
             CategoryRow(
-                categories = categories,
-                selectedCategoryId = selectedCategoryId,
+                categories = taskListUiState.categories,
+                selectedCategoryId = taskListUiState.selectedCategoryId,
                 onCategorySelected = onCategorySelected
             )
 
-            if (tasks.isEmpty()) {
+            if (taskListUiState.tasksSection.isEmpty()) {
                 EmptyState()
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
+                    state = listState,
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(tasks, key = { it.id }) { task ->
-                        SwipeableTaskItem(
-                            task = task,
-                            onDelete = onDeleteTask,
-                            onEdit = onTaskClick
-                        ) {
-                            Box(
-                                modifier = Modifier.animateItem()
-                            ) {
-                                TaskItem(
-                                    task = task,
-                                    onClick = { onTaskClick(task.id) },
-                                    onToggleComplete = { onToggleComplete(task.id,!task.isCompleted) }
-                                )
+                    taskListUiState.tasksSection.forEach { section ->
+                        when (section) {
+
+                            is TaskSection.Header -> {
+                                stickyHeader(key = "header_${section.title}") {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().animateItem()
+                                    ) {
+                                        SectionHeader(section.title,
+                                            section.count,
+                                            isExpanded = taskListUiState.expandedSections.contains(section.title),
+                                            onSectionExpanded = {
+                                                onSectionExpanded(section.title)
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            is TaskSection.Item -> {
+                                item(
+                                    key = "task_${section.task.id}"
+                                ) {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().animateItem()
+                                    ) {
+                                        SwipeableTaskItem(
+                                            task = section.task,
+                                            onDelete = onDeleteTask,
+                                            onEdit = onTaskClick
+                                        ) {
+                                            TaskItem(
+                                                task = section.task,
+                                                onClick = { onTaskClick(section.task.id) },
+                                                onToggleComplete = { onToggleComplete(section.task.id,!section.task.isCompleted) }
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -102,8 +162,77 @@ fun TaskListScreen(
             }
         }
     }
+    //Sort Bottom Sheet
+    if (showSortSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSortSheet = false },
+            sheetState = sheetState
+        ) {
+            SortBottomSheetContent(
+                currentSort = taskListUiState.currentSort,
+                onSortSelected = {
+                    onSortSelected(it)
+                    showSortSheet = false   // optional auto-close
+                },
+                onToggleDirection = onToggleDirection,
+                onToggleShowCompletedTasks = onToggleShowCompletedTasks
+            )
+        }
+    }
 }
 
+@Composable
+fun SectionHeader(title: SectionType,count: Int,
+                  isExpanded: Boolean,
+                  onSectionExpanded: () -> Unit
+) {
+    Surface(
+        color = title.backgroundColor(),
+        tonalElevation = 2.dp,
+        shape = RoundedCornerShape(15.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onSectionExpanded() }
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title.displayText(count),
+                color = title.textColor(),
+                fontSize = 16.sp
+            )
+
+            val rotation by animateFloatAsState(
+                targetValue = if (isExpanded) 180f else 0f,
+                label = ""
+            )
+
+            Icon(
+                imageVector = Icons.Default.ExpandMore,
+                contentDescription = null,
+                modifier = Modifier.rotate(rotation)
+            )
+        }
+    }
+//    Surface(
+//        color = title.backgroundColor(),
+//        tonalElevation = 2.dp
+//    ) {
+//        Text(
+//            text = title.displayText(count),
+//            style = MaterialTheme.typography.titleLarge,
+//            fontSize = 16.sp,
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(horizontal = 16.dp, vertical = 12.dp),
+//            color = title.textColor()
+//        )
+//    }
+}
 @Composable
 private fun CategoryRow(
     categories: List<Category>,
@@ -232,7 +361,7 @@ private fun TaskItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(15.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         )

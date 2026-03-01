@@ -1,7 +1,6 @@
 package com.kotlinpractice.smarttaskmanager.util.enums
 
-enum class Priority {
-    LOW,
-    MEDIUM,
-    HIGH
+enum class ScreenName{
+    TASK_LIST,
+    ADD_EDIT_TASK
 }
